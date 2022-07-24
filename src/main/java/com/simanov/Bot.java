@@ -13,6 +13,8 @@ import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -20,8 +22,8 @@ import java.util.logging.Level;
 import static com.simanov.Main.logger;
 
 public class Bot extends TelegramLongPollingBot {
-
-    private static final Long CHAT_ID = -1001623594259L;
+    private DatabaseHandler databaseHandler = new DatabaseHandler();
+    public static final Long CHAT_ID = -1001623594259L;
 
     private static final String COMMAND = "psql -d raspdb -c ";
 
@@ -31,23 +33,36 @@ public class Bot extends TelegramLongPollingBot {
      */
     @Override
     public void onUpdateReceived(Update update) {
-        //Avoid using bot in others chats
         if(update.getMessage() != null){
             Message receivedMessage = update.getMessage();
+            //Avoid using bot in others chats
             if (!checkIfChatCorrect(receivedMessage)){
+                System.out.println("Chat is incorrect");
                 return;
             }
 
             //Handle commands
-            if(update.getMessage().isCommand()){
-
+            if(receivedMessage.isCommand()){
+                Connection connection;
+                try {
+                    connection = databaseHandler.getDbConnection();
+                    databaseHandler.selectQuery(connection);
+                } catch (SQLException | ClassNotFoundException throwable) {
+                    throwable.printStackTrace();
+                }
+                System.out.println("done");
             }
 
             //New member join
             if(!receivedMessage.getNewChatMembers().isEmpty()){
-                User newUser = receivedMessage.getNewChatMembers().get(0);
+                NewUser newUser = (NewUser) receivedMessage.getNewChatMembers().get(0);
                 changePermission(newUser,false);
                 sendWelcomeButton(newUser);
+//                try {
+//                    execute(newUser.sendWelcomeButton());
+//                } catch (TelegramApiException e) {
+//                    e.printStackTrace();
+//                }
             }
 
             //Member left chat
@@ -77,14 +92,31 @@ public class Bot extends TelegramLongPollingBot {
 
     private void loginButtonClicked(CallbackQuery callbackQuery) {
         if(callbackQuery.getData().split("_")[0].equals(callbackQuery.getFrom().getId().toString())){
+            NewUser newUser = (NewUser) callbackQuery.getFrom();
             changePermission(callbackQuery.getFrom(),true);
             DeleteMessage deleteMessage = new DeleteMessage(CHAT_ID.toString(), callbackQuery.getMessage().getMessageId());
             try {
                 execute(deleteMessage);
+                execute(welcomeMessage(callbackQuery.getFrom()));
             } catch (TelegramApiException e) {
                 e.printStackTrace();
             }
+
         }
+    }
+
+    private SendMessage welcomeMessage(User welcomedUser) {
+
+        String mention = "[" + welcomedUser.getFirstName() + "](tg://user?id=" + welcomedUser.getId() + ")";
+        SendMessage sendMessage = new SendMessage();
+        sendMessage.setText("Добро пожаловать, " + mention + ", в наш дружный и теплый чат\n" +
+                "Вам тут очень рады. Мы организовываем разные активиты в Брне и не только.\n" +
+                "@transsiberianway - Инфоканал где все ближайшие мероприятия \n" +
+                "https://instagram.com/transsiberianway?utm_medium=copy_link - Инста \n" +
+                "Представьтесь, пожалуйста и расскажите о себе! Нам интересно, вам полезно. А кто не представился - тот бот! \n");
+        sendMessage.setParseMode("Markdown");
+        sendMessage.setChatId(CHAT_ID);
+        return sendMessage;
     }
 
     private boolean checkIfChatCorrect(Message message){
