@@ -2,30 +2,21 @@ package com.simanov;
 
 import com.google.common.io.Resources;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
-import org.telegram.telegrambots.meta.api.methods.groupadministration.RestrictChatMember;
-import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.DeleteMessage;
 import org.telegram.telegrambots.meta.api.objects.*;
-import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
-import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 import java.io.IOException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.sql.Connection;
-import java.sql.SQLException;
-import java.util.Collections;
-import java.util.List;
 import java.util.Objects;
 import java.util.logging.Level;
 import static com.simanov.Main.logger;
 
 public class Bot extends TelegramLongPollingBot {
     private DatabaseHandler databaseHandler = new DatabaseHandler();
+    //public static final Long CHAT_ID = -1001623594259L;
     public static final Long CHAT_ID = -1001623594259L;
-
-    private static final String COMMAND = "psql -d raspdb -c ";
 
     /**
      * Method for receiving messages.
@@ -43,32 +34,35 @@ public class Bot extends TelegramLongPollingBot {
 
             //Handle commands
             if(receivedMessage.isCommand()){
-                Connection connection;
-                try {
-                    connection = databaseHandler.getDbConnection();
-                    databaseHandler.selectQuery(connection);
-                } catch (SQLException | ClassNotFoundException throwable) {
-                    throwable.printStackTrace();
-                }
-                System.out.println("done");
+                System.out.println("Command was sent " + databaseHandler.getSocialValue(receivedMessage.getFrom().getId(),"InvitedFriends"));
+                return;
             }
 
             //New member join
             if(!receivedMessage.getNewChatMembers().isEmpty()){
-                NewUser newUser = (NewUser) receivedMessage.getNewChatMembers().get(0);
-                changePermission(newUser,false);
-                sendWelcomeButton(newUser);
-//                try {
-//                    execute(newUser.sendWelcomeButton());
-//                } catch (TelegramApiException e) {
-//                    e.printStackTrace();
-//                }
+                System.out.println("New member join");
+                NewUser newUser = new NewUser(receivedMessage.getNewChatMembers().get(0));
+                User invitedBy = receivedMessage.getFrom();
+                System.out.println(newUser);
+                System.out.println("invitedBy " + invitedBy);
+                System.out.println(newUser);
+                System.out.println("invitedBy " + invitedBy);
+                try {
+                    execute(newUser.changePermission(false));
+                    execute(newUser.sendWelcomeButton(invitedBy));
+                } catch (TelegramApiException e) {
+                    e.printStackTrace();
+                }
+                return;
             }
 
             //Member left chat
             if(receivedMessage.getLeftChatMember() != null){
                 sayGoodBye();
+                return;
             }
+
+            incrementMessageCounter(receivedMessage.getFrom());
 
             //Replay to somebody who's not bot
             if(receivedMessage.getReplyToMessage() != null &&
@@ -90,34 +84,31 @@ public class Bot extends TelegramLongPollingBot {
 
     }
 
+    private void incrementMessageCounter(User from) {
+        databaseHandler.incrementMessagesDB(from.getId());
+    }
+
     private void loginButtonClicked(CallbackQuery callbackQuery) {
+        //Check if clicked by user which should be registered
         if(callbackQuery.getData().split("_")[0].equals(callbackQuery.getFrom().getId().toString())){
-            NewUser newUser = (NewUser) callbackQuery.getFrom();
-            changePermission(callbackQuery.getFrom(),true);
+            NewUser newUser = new NewUser(callbackQuery.getFrom());
             DeleteMessage deleteMessage = new DeleteMessage(CHAT_ID.toString(), callbackQuery.getMessage().getMessageId());
             try {
+                execute(newUser.changePermission(true));
+                databaseHandler.registerUserInDB(callbackQuery.getFrom());
                 execute(deleteMessage);
-                execute(welcomeMessage(callbackQuery.getFrom()));
+                execute(newUser.welcomeMessage());
             } catch (TelegramApiException e) {
                 e.printStackTrace();
             }
 
+            if(callbackQuery.getData().split("_")[2] != ""){
+                Long invitedById = Long.getLong(callbackQuery.getData().split("_")[2]);
+                databaseHandler.incrementInvited(invitedById);
+            }
         }
     }
 
-    private SendMessage welcomeMessage(User welcomedUser) {
-
-        String mention = "[" + welcomedUser.getFirstName() + "](tg://user?id=" + welcomedUser.getId() + ")";
-        SendMessage sendMessage = new SendMessage();
-        sendMessage.setText("Добро пожаловать, " + mention + ", в наш дружный и теплый чат\n" +
-                "Вам тут очень рады. Мы организовываем разные активиты в Брне и не только.\n" +
-                "@transsiberianway - Инфоканал где все ближайшие мероприятия \n" +
-                "https://instagram.com/transsiberianway?utm_medium=copy_link - Инста \n" +
-                "Представьтесь, пожалуйста и расскажите о себе! Нам интересно, вам полезно. А кто не представился - тот бот! \n");
-        sendMessage.setParseMode("Markdown");
-        sendMessage.setChatId(CHAT_ID);
-        return sendMessage;
-    }
 
     private boolean checkIfChatCorrect(Message message){
         if(!Objects.equals(message.getChatId(), CHAT_ID)){
@@ -127,19 +118,6 @@ public class Bot extends TelegramLongPollingBot {
         return true;
     }
 
-    public void changePermission (User user, Boolean allow){
-        RestrictChatMember restrictChatMember = RestrictChatMember.builder()
-                    .chatId(CHAT_ID)
-                    .userId(user.getId())
-                    .permissions(new ChatPermissions(allow,allow,allow,allow,allow,false,allow,false))
-                    .build();
-
-        try {
-            execute(restrictChatMember);
-        } catch (TelegramApiException e) {
-            e.printStackTrace();
-        }
-    }
 
     private void sayGoodBye() {
         System.out.println("Arrividercchi");
@@ -147,26 +125,6 @@ public class Bot extends TelegramLongPollingBot {
 
     private void karmaChangeAction() {
         System.out.println("What did you say? Karma +/-");
-    }
-
-    private void sendWelcomeButton(User newUser) {
-        String mention = "[" + newUser.getFirstName() + "](tg://user?id=" + newUser.getId() + ")";
-        InlineKeyboardButton inlineKeyboardButton = new InlineKeyboardButton();
-        inlineKeyboardButton.setText("Зайти");
-        inlineKeyboardButton.setCallbackData(newUser.getId() + "_login");
-        List<InlineKeyboardButton> listButtons = Collections.singletonList(inlineKeyboardButton);
-        List<List<InlineKeyboardButton>> listListButtons = Collections.singletonList(listButtons);
-        InlineKeyboardMarkup inlineKeyboardMarkup = new InlineKeyboardMarkup(listListButtons);
-        SendMessage sendMessage = new SendMessage();
-        sendMessage.setText("Привет " + mention + " Жми на ктопку Зайти");
-        sendMessage.setChatId(CHAT_ID);
-        sendMessage.setParseMode("Markdown");
-        sendMessage.setReplyMarkup(inlineKeyboardMarkup);
-        try {
-            execute(sendMessage);
-        } catch (TelegramApiException e) {
-            e.printStackTrace();
-        }
     }
 
     /**
