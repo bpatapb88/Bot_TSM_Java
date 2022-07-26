@@ -17,16 +17,12 @@ public class NewUser {
         this.newUser = newUser;
     }
 
-    public SendMessage sendWelcomeButton(User invitedBy) {
+    public SendMessage sendWelcomeButton() {
         System.out.println("sendWelcomeButton");
         String mention = "[" + newUser.getFirstName() + "](tg://user?id=" + newUser.getId() + ")";
         InlineKeyboardButton inlineKeyboardButton = new InlineKeyboardButton();
         inlineKeyboardButton.setText("Зайти");
-        if (invitedBy != null){
-            inlineKeyboardButton.setCallbackData(newUser.getId() + "_login_" + invitedBy.getId());
-        }else{
-            inlineKeyboardButton.setCallbackData(newUser.getId() + "_login_");
-        }
+        inlineKeyboardButton.setCallbackData(newUser.getId() + "_login");
 
         List<InlineKeyboardButton> listButtons = Collections.singletonList(inlineKeyboardButton);
         List<List<InlineKeyboardButton>> listListButtons = Collections.singletonList(listButtons);

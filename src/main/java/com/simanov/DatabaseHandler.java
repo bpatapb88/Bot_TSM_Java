@@ -77,11 +77,13 @@ public class DatabaseHandler extends Configs{
     }
 
     public void incrementInvited(Long invitedById) {
+        System.out.println("incrementInvited id " + invitedById);
         Long currentInvitedValue = getSocialValue(invitedById, "InvitedFriends");
         currentInvitedValue++;
         String sqlCommand = "UPDATE users_tsm SET values = jsonb_set(values::jsonb,'{\"Social\",\"InvitedFriends\"}'," + currentInvitedValue +
                 "::text::jsonb, false) WHERE telegram_id=" + invitedById + ";";
         executeQuery(sqlCommand);
+        System.out.println("incrementInvited[EXIT] id " + invitedById);
     }
 
     private void executeQuery(String query){

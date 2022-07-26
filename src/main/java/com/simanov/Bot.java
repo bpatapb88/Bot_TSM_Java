@@ -40,16 +40,18 @@ public class Bot extends TelegramLongPollingBot {
 
             //New member join
             if(!receivedMessage.getNewChatMembers().isEmpty()){
+                //TODO: add check if new user is bot
                 System.out.println("New member join");
                 NewUser newUser = new NewUser(receivedMessage.getNewChatMembers().get(0));
-                User invitedBy = receivedMessage.getFrom();
                 System.out.println(newUser);
-                System.out.println("invitedBy " + invitedBy);
-                System.out.println(newUser);
-                System.out.println("invitedBy " + invitedBy);
+                System.out.println("invitedBy " + receivedMessage.getFrom());
+                if (receivedMessage.getFrom() != null){
+                    databaseHandler.incrementInvited(receivedMessage.getFrom().getId());
+                }
+
                 try {
                     execute(newUser.changePermission(false));
-                    execute(newUser.sendWelcomeButton(invitedBy));
+                    execute(newUser.sendWelcomeButton());
                 } catch (TelegramApiException e) {
                     e.printStackTrace();
                 }
@@ -100,11 +102,6 @@ public class Bot extends TelegramLongPollingBot {
                 execute(newUser.welcomeMessage());
             } catch (TelegramApiException e) {
                 e.printStackTrace();
-            }
-
-            if(callbackQuery.getData().split("_")[2] != ""){
-                Long invitedById = Long.getLong(callbackQuery.getData().split("_")[2]);
-                databaseHandler.incrementInvited(invitedById);
             }
         }
     }
