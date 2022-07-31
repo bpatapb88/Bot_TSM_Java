@@ -2,6 +2,7 @@ package com.simanov;
 
 import com.google.common.io.Resources;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
+import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.DeleteMessage;
 import org.telegram.telegrambots.meta.api.objects.*;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
@@ -34,13 +35,12 @@ public class Bot extends TelegramLongPollingBot {
 
             //Handle commands
             if(receivedMessage.isCommand()){
-                System.out.println("Command was sent " + databaseHandler.getSocialValue(receivedMessage.getFrom().getId(),"InvitedFriends"));
+                System.out.println("Karma is " + databaseHandler.getKarma(receivedMessage.getFrom()));
                 return;
             }
 
             //New member join
-            if(!receivedMessage.getNewChatMembers().isEmpty()){
-                //TODO: add check if new user is bot
+            if(!receivedMessage.getNewChatMembers().isEmpty() && !isBot(receivedMessage.getNewChatMembers().get(0))){
                 System.out.println("New member join");
                 NewUser newUser = new NewUser(receivedMessage.getNewChatMembers().get(0));
                 System.out.println(newUser);
@@ -59,18 +59,29 @@ public class Bot extends TelegramLongPollingBot {
             }
 
             //Member left chat
-            if(receivedMessage.getLeftChatMember() != null){
+            if(receivedMessage.getLeftChatMember() != null && !isBot(receivedMessage.getLeftChatMember())){
                 sayGoodBye();
                 return;
             }
 
-            incrementMessageCounter(receivedMessage.getFrom());
+            // Messages ++
+            if(!isBot(receivedMessage.getFrom())){
+                incrementMessageCounter(receivedMessage.getFrom());
+            }
 
             //Replay to somebody who's not bot
             if(receivedMessage.getReplyToMessage() != null &&
-                    !receivedMessage.getReplyToMessage().getFrom().getIsBot() &&
+                    !isBot(receivedMessage.getReplyToMessage().getFrom()) &&
                     !Objects.equals(receivedMessage.getFrom().getId(), receivedMessage.getReplyToMessage().getFrom().getId())){
-                karmaChangeAction();
+                KarmaHandler karmaHandler = new KarmaHandler(receivedMessage);
+                SendMessage sendMessage = karmaHandler.changeKarma(databaseHandler);
+                try {
+                    if (sendMessage != null) {
+                        execute(sendMessage);
+                    }
+                } catch (TelegramApiException e) {
+                    e.printStackTrace();
+                }
             }
         }
 
@@ -120,10 +131,6 @@ public class Bot extends TelegramLongPollingBot {
         System.out.println("Arrividercchi");
     }
 
-    private void karmaChangeAction() {
-        System.out.println("What did you say? Karma +/-");
-    }
-
     /**
      * This method returns the bot's name, which was specified during registration.
      * @return bot name
@@ -148,5 +155,10 @@ public class Bot extends TelegramLongPollingBot {
             e.printStackTrace();
         }
         return apiKey;
+    }
+
+    public boolean isBot(User user){
+        //TODO change to user.isBot() before release
+        return false;
     }
 }

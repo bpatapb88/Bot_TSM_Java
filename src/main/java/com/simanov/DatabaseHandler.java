@@ -94,4 +94,34 @@ public class DatabaseHandler extends Configs{
             throwables.printStackTrace();
         }
     }
+
+    public int changeKarmaDB(User nominated, boolean raise) {
+        System.out.println("changeKarma [ENTER] telegram_id=" + nominated.getId() + "\nraise=" + raise);
+        int karma = getKarma(nominated);
+        karma = raise ? karma+1 : karma-1;
+        String sqlUpdate = "UPDATE users_tsm SET karma=" + karma + " WHERE telegram_id=" + nominated.getId() + ";";
+        executeQuery(sqlUpdate);
+        System.out.println("changeKarma [EXIT] telegram_id=" + nominated.getId() +
+                "\nraise=" + raise +
+                "\nnewKarma=" + karma);
+        return karma;
+    }
+
+    public int getKarma(User nominated) {
+        System.out.println("getKarma for user " + nominated);
+        int currentKarma = 0;
+        String select = "SELECT karma FROM users_tsm WHERE telegram_id=" + nominated.getId() + ";";
+        try {
+            PreparedStatement prSt = getDbConnection().prepareStatement(select);
+            ResultSet resultSet = prSt.executeQuery();
+            if(resultSet.next()){
+                currentKarma = resultSet.getInt(1);
+            }else{
+                System.out.println("Something wrong");
+            }
+        } catch (ClassNotFoundException | SQLException e) {
+            e.printStackTrace();
+        }
+        return currentKarma;
+    }
 }
