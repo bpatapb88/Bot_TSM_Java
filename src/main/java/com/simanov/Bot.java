@@ -1,6 +1,7 @@
 package com.simanov;
 
 import com.google.common.io.Resources;
+import org.checkerframework.checker.units.qual.A;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.DeleteMessage;
@@ -16,7 +17,6 @@ import static com.simanov.Main.logger;
 
 public class Bot extends TelegramLongPollingBot {
     private DatabaseHandler databaseHandler = new DatabaseHandler();
-    //public static final Long CHAT_ID = -1001623594259L;
     public static final Long CHAT_ID = -1001623594259L;
 
     /**
@@ -35,7 +35,8 @@ public class Bot extends TelegramLongPollingBot {
 
             //Handle commands
             if(receivedMessage.isCommand()){
-                System.out.println("Karma is " + databaseHandler.getKarma(receivedMessage.getFrom()));
+                ActionSendPeriod actionSendPeriod = new ActionSendPeriod();
+
                 return;
             }
 
@@ -60,7 +61,7 @@ public class Bot extends TelegramLongPollingBot {
 
             //Member left chat
             if(receivedMessage.getLeftChatMember() != null && !isBot(receivedMessage.getLeftChatMember())){
-                sayGoodBye();
+                sayGoodBye(receivedMessage.getLeftChatMember());
                 return;
             }
 
@@ -127,8 +128,17 @@ public class Bot extends TelegramLongPollingBot {
     }
 
 
-    private void sayGoodBye() {
-        System.out.println("Arrividercchi");
+    private void sayGoodBye(User leftUser) {
+        String mention = "[" + leftUser.getFirstName() + "](tg://user?id=" + leftUser.getId() + ")";
+        SendMessage sendMessage = new SendMessage();
+        sendMessage.setChatId(CHAT_ID);
+        sendMessage.setParseMode("Markdown");
+        sendMessage.setText("Прощай " + mention + ", и ничего не общещай, и ничего не говори...");
+        try {
+            execute(sendMessage);
+        } catch (TelegramApiException e) {
+            e.printStackTrace();
+        }
     }
 
     /**

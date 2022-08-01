@@ -98,7 +98,13 @@ public class DatabaseHandler extends Configs{
     public int changeKarmaDB(User nominated, boolean raise) {
         System.out.println("changeKarma [ENTER] telegram_id=" + nominated.getId() + "\nraise=" + raise);
         int karma = getKarma(nominated);
-        karma = raise ? karma+1 : karma-1;
+        if(raise){
+            karma++;
+        }else{
+            if (karma > 0){
+                karma--;
+            }
+        }
         String sqlUpdate = "UPDATE users_tsm SET karma=" + karma + " WHERE telegram_id=" + nominated.getId() + ";";
         executeQuery(sqlUpdate);
         System.out.println("changeKarma [EXIT] telegram_id=" + nominated.getId() +
