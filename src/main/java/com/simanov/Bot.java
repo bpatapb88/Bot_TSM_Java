@@ -1,7 +1,6 @@
 package com.simanov;
 
 import com.google.common.io.Resources;
-import org.checkerframework.checker.units.qual.A;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.DeleteMessage;
@@ -35,7 +34,6 @@ public class Bot extends TelegramLongPollingBot {
 
             //Handle commands
             if(receivedMessage.isCommand()){
-                ActionSendPeriod actionSendPeriod = new ActionSendPeriod();
 
                 return;
             }
