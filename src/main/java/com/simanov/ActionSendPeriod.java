@@ -47,7 +47,7 @@ public class ActionSendPeriod implements Runnable{
         while (true){
             try {
                 bot.execute(getSendJoke());
-                Thread.sleep(5000);
+                Thread.sleep(50000);
             } catch (TelegramApiException | InterruptedException e) {
                 e.printStackTrace();
             }

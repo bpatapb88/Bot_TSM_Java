@@ -1,17 +1,21 @@
 package com.simanov;
 import org.telegram.telegrambots.meta.api.objects.User;
-
 import java.sql.*;
 
-public class DatabaseHandler extends Configs{
+public class DatabaseHandler {
     Connection dbConnection;
+    private static final String DB_HOST = "localhost";
+    private static final String DB_PORT = "5432";
+    private static final String DB_USER = "postgres";
+    private static final String DB_PASS = "postgres";
+    private static final String DB_NAME = "raspdb";
 
     public Connection getDbConnection() throws ClassNotFoundException, SQLException{
-        String connectionString = "jdbc:postgresql://" + dbHost + ":"
-                + dbPort + "/" + dbName;
+        String connectionString = "jdbc:postgresql://" + DB_HOST + ":"
+                + DB_PORT + "/" + DB_NAME;
         Class.forName("org.postgresql.Driver");
         if(dbConnection == null){
-            dbConnection = DriverManager.getConnection(connectionString, dbUser, dbPass);
+            dbConnection = DriverManager.getConnection(connectionString, DB_USER, DB_PASS);
         }
         return dbConnection;
     }
@@ -77,13 +81,13 @@ public class DatabaseHandler extends Configs{
     }
 
     public void incrementInvited(Long invitedById) {
-        System.out.println("incrementInvited id " + invitedById);
+        System.out.println("incrementInvited() [ENTER] id " + invitedById);
         Long currentInvitedValue = getSocialValue(invitedById, "InvitedFriends");
         currentInvitedValue++;
         String sqlCommand = "UPDATE users_tsm SET values = jsonb_set(values::jsonb,'{\"Social\",\"InvitedFriends\"}'," + currentInvitedValue +
                 "::text::jsonb, false) WHERE telegram_id=" + invitedById + ";";
         executeQuery(sqlCommand);
-        System.out.println("incrementInvited[EXIT] id " + invitedById);
+        System.out.println("incrementInvited() [EXIT] id " + invitedById);
     }
 
     private void executeQuery(String query){
@@ -96,7 +100,7 @@ public class DatabaseHandler extends Configs{
     }
 
     public int changeKarmaDB(User nominated, boolean raise) {
-        System.out.println("changeKarma [ENTER] telegram_id=" + nominated.getId() + "\nraise=" + raise);
+        System.out.println("changeKarmaDB [ENTER] telegram_id=" + nominated.getId() + "\nraise=" + raise);
         int karma = getKarma(nominated);
         if(raise){
             karma++;
@@ -107,14 +111,14 @@ public class DatabaseHandler extends Configs{
         }
         String sqlUpdate = "UPDATE users_tsm SET karma=" + karma + " WHERE telegram_id=" + nominated.getId() + ";";
         executeQuery(sqlUpdate);
-        System.out.println("changeKarma [EXIT] telegram_id=" + nominated.getId() +
+        System.out.println("changeKarmaDB [EXIT] telegram_id=" + nominated.getId() +
                 "\nraise=" + raise +
                 "\nnewKarma=" + karma);
         return karma;
     }
 
     public int getKarma(User nominated) {
-        System.out.println("getKarma for user " + nominated);
+        System.out.println("getKarma() [ENTER] for user " + nominated);
         int currentKarma = 0;
         String select = "SELECT karma FROM users_tsm WHERE telegram_id=" + nominated.getId() + ";";
         try {
@@ -123,11 +127,12 @@ public class DatabaseHandler extends Configs{
             if(resultSet.next()){
                 currentKarma = resultSet.getInt(1);
             }else{
-                System.out.println("Something wrong");
+                System.out.println("getKarma() Something wrong");
             }
         } catch (ClassNotFoundException | SQLException e) {
             e.printStackTrace();
         }
+        System.out.println("getKarma() [EXIT] currentKarma " + currentKarma);
         return currentKarma;
     }
 }

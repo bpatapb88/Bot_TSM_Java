@@ -73,10 +73,10 @@ public class Bot extends TelegramLongPollingBot {
                     !isBot(receivedMessage.getReplyToMessage().getFrom()) &&
                     !Objects.equals(receivedMessage.getFrom().getId(), receivedMessage.getReplyToMessage().getFrom().getId())){
                 KarmaHandler karmaHandler = new KarmaHandler(receivedMessage);
-                SendMessage sendMessage = karmaHandler.changeKarma(databaseHandler);
+                int newKarma = karmaHandler.getNewKarma(databaseHandler);
                 try {
-                    if (sendMessage != null) {
-                        execute(sendMessage);
+                    if (newKarma%2 == 0 && newKarma!= karmaHandler.getOldKarma()) {
+                        execute(karmaHandler.getSendMessage());
                     }
                 } catch (TelegramApiException e) {
                     e.printStackTrace();
