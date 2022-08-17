@@ -15,6 +15,7 @@ public class KarmaHandler {
     private String mentionNominated;
     private String mentionJudge;
     private int oldKarma;
+    public final int EACH = 5;
 
     public KarmaHandler(Message replay) {
         this.replay = replay;

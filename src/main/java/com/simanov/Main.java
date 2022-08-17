@@ -28,8 +28,8 @@ public class Main {
             Bot bot = new Bot();
             TelegramBotsApi botsApi = new TelegramBotsApi(DefaultBotSession.class);
             botsApi.registerBot(bot);
-            ActionSendPeriod actionSendPeriod = new ActionSendPeriod(bot);
-            actionSendPeriod.run();
+//            ActionSendPeriod actionSendPeriod = new ActionSendPeriod(bot);
+//            actionSendPeriod.run();
         } catch (TelegramApiException e) {
             e.printStackTrace();
         }

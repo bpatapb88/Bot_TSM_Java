@@ -1,2 +1,6 @@
 июн. 23, 2022 11:31:13 PM com.simanov.Main main
 INFO: User with id Some code answered poll. Start to collect data... 
+авг. 10, 2022 7:40:36 PM org.apache.http.impl.execchain.RetryExec execute
+INFO: I/O exception (java.net.SocketException) caught when processing request to {s}->https://api.telegram.org:443: Broken pipe (Write failed)
+авг. 10, 2022 7:40:36 PM org.apache.http.impl.execchain.RetryExec execute
+INFO: Retrying request to {s}->https://api.telegram.org:443

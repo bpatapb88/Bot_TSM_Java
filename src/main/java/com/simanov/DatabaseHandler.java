@@ -125,7 +125,7 @@ public class DatabaseHandler {
             PreparedStatement prSt = getDbConnection().prepareStatement(select);
             ResultSet resultSet = prSt.executeQuery();
             if(resultSet.next()){
-                currentKarma = resultSet.getInt(1);
+                return resultSet.getInt(1);
             }else{
                 System.out.println("getKarma() Something wrong");
             }
@@ -133,6 +133,31 @@ public class DatabaseHandler {
             e.printStackTrace();
         }
         System.out.println("getKarma() [EXIT] currentKarma " + currentKarma);
-        return currentKarma;
+        return 0;
+    }
+
+    public int getStatus(User initiatorAdmin) {
+        String select = "SELECT status FROM users_tsm WHERE telegram_id=" + initiatorAdmin.getId() + ";";
+        try {
+            PreparedStatement prSt = getDbConnection().prepareStatement(select);
+            ResultSet resultSet = prSt.executeQuery();
+            if(resultSet.next()){
+                return resultSet.getInt(1);
+            }else{
+                System.out.println("getStatus() Something wrong");
+            }
+        }catch (SQLException | ClassNotFoundException e){
+            e.printStackTrace();
+        }
+        return 0;
+    }
+
+    public void incrementStatus(User initiatorAdmin) {
+        int status = getStatus(initiatorAdmin);
+        status++;
+        String sqlUpdate = "UPDATE users_tsm SET status=" + status + " WHERE telegram_id=" + initiatorAdmin.getId() + ";";
+        executeQuery(sqlUpdate);
+        System.out.println("incrementStatus [EXIT] telegram_id=" + initiatorAdmin.getId() +
+                "\nnewStatus=" + status);
     }
 }
